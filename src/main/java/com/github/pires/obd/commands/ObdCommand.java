@@ -312,5 +312,9 @@ public abstract class ObdCommand {
     public void setEnd(long end) {
         this.end = end;
     }
+    
+    public final String getCommand(){
+        return cmd;
+    }
 
 }
