@@ -28,7 +28,7 @@ public abstract class ObdCommand {
     protected String cmd = null;
     protected boolean useImperialUnits = false;
     protected String rawData = null;
-    protected long responseTimeDelay = 200;
+    private long responseTimeDelay;
     private long start;
     private long end;
     private ObdCommandMode mode;
@@ -81,6 +81,17 @@ public abstract class ObdCommand {
     }
 
     /**
+     * Default ctor for setting a write-read delat
+     *
+     * @param command           command to send
+     * @param responseTimeDelay milliseconds to wait between writing the command and reading the response
+     */
+    public ObdCommand(String command, long responseTimeDelay) {
+        this(command);
+        this.responseTimeDelay = responseTimeDelay;
+    }
+
+    /**
      * Creates a new ObdCommand with the specified mode, and PID if required by {@link ObdCommandMode#usesPID()}
      *
      * @param mode the mode to use by the command
@@ -101,9 +112,16 @@ public abstract class ObdCommand {
     }
 
     /**
-     * Prevent empty instantiation
+     * Creates a new ObdCommand with the specified mode, and PID if required by {@link ObdCommandMode#usesPID()} and sets a write-read delat
+     *
+     * @param mode              mode to use by the command
+     * @param PID               PID to send
+     * @param responseTimeDelay milliseconds to wait between writing the command and reading the response
+     * @throws IllegalArgumentException When PID is null and mode requires a PID
      */
-    private ObdCommand() {
+    public ObdCommand(ObdCommandMode mode, String PID, long responseTimeDelay) {
+        this(mode, PID);
+        this.responseTimeDelay = responseTimeDelay;
     }
 
     /**
@@ -129,6 +147,11 @@ public abstract class ObdCommand {
             InterruptedException {
         start = System.currentTimeMillis();
         sendCommand(out);
+
+        //Some systems may take a while to answer, so we can make this Thread sleep for a while
+        if (responseTimeDelay != 0)
+            Thread.sleep(responseTimeDelay);
+
         readResult(in);
         end = System.currentTimeMillis();
     }
@@ -149,14 +172,6 @@ public abstract class ObdCommand {
         // Carriage return
         out.write((cmd + "\r").getBytes());
         out.flush();
-
-    /*
-     * HACK GOLDEN HAMMER ahead!!
-     *
-     * Due to the time that some systems may take to respond, let's give it
-     * 200ms.
-     */
-        Thread.sleep(responseTimeDelay);
     }
 
     /**
