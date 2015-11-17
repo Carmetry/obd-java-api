@@ -31,6 +31,33 @@ public abstract class ObdCommand {
     protected long responseTimeDelay = 200;
     private long start;
     private long end;
+    private ObdCommandMode mode;
+
+    public enum ObdCommandMode {
+
+        CURRENT_DATA("01", true),
+        FREEZE_FRAME_DATA("02", true),
+        STORED_DTCS("03", false),
+        CLEAR_DTCS("04", false),
+        VEHICLE_INFOTATION("09", true),
+        PERMANENT_DTCS("0A", false);
+
+        private final String modeStr;
+        private final boolean usesPID;
+
+        ObdCommandMode(String modeStr, boolean usesPID) {
+            this.modeStr = modeStr;
+            this.usesPID = usesPID;
+        }
+
+        public String getModeStr() {
+            return modeStr;
+        }
+
+        public boolean usesPID() {
+            return usesPID;
+        }
+    }
 
     /**
      * Default ctor to use
@@ -38,8 +65,39 @@ public abstract class ObdCommand {
      * @param command the command to send
      */
     public ObdCommand(String command) {
+
         this.cmd = command;
-        this.buffer = new ArrayList<Integer>();
+        this.buffer = new ArrayList<>();
+
+        //Set mode according to contents of command
+        String modeStr = command.substring(0, 2);
+
+        for (ObdCommandMode mode : ObdCommandMode.values()) {
+            if (mode.getModeStr().equals(modeStr)) {
+                this.mode = mode;
+                break;
+            }
+        }
+    }
+
+    /**
+     * Creates a new ObdCommand with the specified mode, and PID if required by {@link ObdCommandMode#usesPID()}
+     *
+     * @param mode the mode to use by the command
+     * @param PID  the PID to send
+     * @throws IllegalArgumentException When PID is null and mode requires a PID
+     */
+    public ObdCommand(ObdCommandMode mode, String PID) {
+
+        StringBuilder builder = new StringBuilder(5);
+        builder.append(mode.getModeStr());
+
+        if (mode.usesPID()) {
+            if (PID == null)
+                throw new IllegalArgumentException("Specified null PID with mode " + mode.getModeStr() + ", which requires one");
+
+            builder.append(' ').append(PID);
+        }
     }
 
     /**
@@ -59,7 +117,7 @@ public abstract class ObdCommand {
 
     /**
      * Sends the OBD-II request and deals with the response.
-     * <p>
+     * <p/>
      * This method CAN be overriden in fake commands.
      *
      * @param in  a {@link java.io.InputStream} object.
@@ -77,7 +135,7 @@ public abstract class ObdCommand {
 
     /**
      * Sends the OBD-II request.
-     * <p>
+     * <p/>
      * This method may be overriden in subclasses, such as ObMultiCommand or
      * TroubleCodesCommand.
      *
@@ -116,7 +174,7 @@ public abstract class ObdCommand {
 
     /**
      * Reads the OBD-II response.
-     * <p>
+     * <p/>
      * This method may be overriden in subclasses, such as ObdMultiCommand.
      *
      * @param in a {@link java.io.InputStream} object.
@@ -312,13 +370,17 @@ public abstract class ObdCommand {
     public void setEnd(long end) {
         this.end = end;
     }
-    
+
     public final String getCommandPID() {
         return cmd.substring(3);
     }
 
-    public final String getCommandPID() {
-        return cmd.substring(3);
+    public final String getCommandModeCode() {
+        return cmd.substring(0, 2);
+    }
+
+    public final ObdCommandMode getCommandMode() {
+        return mode;
     }
 
 }
