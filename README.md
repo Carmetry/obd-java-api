@@ -3,7 +3,7 @@ obd-java-api
 
 OBD-II Java API
 
-[![CircleCI](https://circleci.com/gh/Carmetry/obd-java-api.svg?style=svg)](https://circleci.com/gh/Carmetry/obd-java-api)
+[![CircleCI](https://circleci.com/gh/Carmetry/obd-java-api/tree/develop.svg?style=svg)](https://circleci.com/gh/Carmetry/obd-java-api/tree/develop)
 
 ## Build ##
 
